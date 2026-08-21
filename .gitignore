@@ -1,0 +1,12 @@
+# Purpose: Keep generated dependencies, builds, captures, and local machine files out of Git.
+
+.DS_Store
+**/node_modules/
+**/dist/
+**/coverage/
+**/captures/
+**/.fallow/
+**/.playwright-cli/
+**/playwright-report/
+**/test-results/
+*.log
