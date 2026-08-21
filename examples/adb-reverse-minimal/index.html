@@ -1,0 +1,63 @@
+<!--
+  Purpose: Confirm that PICO Browser reached a macOS development server through USB.
+  Context: The page is opened at 127.0.0.1 on PICO after configuring ADB reverse.
+  Responsibility: Provide an unmistakable visual transport-success signal.
+  Boundary: This page does not request an XR session or implement remote control.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>PICO USB transport demo</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: system-ui, sans-serif;
+        background: #10131a;
+        color: #f4f7fb;
+      }
+
+      body {
+        display: grid;
+        min-height: 100vh;
+        margin: 0;
+        place-items: center;
+      }
+
+      main {
+        width: min(36rem, calc(100% - 3rem));
+      }
+
+      .status {
+        display: inline-block;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background: #153d2e;
+        color: #8df0bd;
+        font-weight: 700;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 8vw, 4rem);
+        line-height: 1;
+      }
+
+      code {
+        color: #a9cbff;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="status">USB transport works</p>
+      <h1>Hello from the Mac.</h1>
+      <p>
+        I served this page on <code>127.0.0.1:39081</code>. If you see it in PICO Browser at
+        <code>127.0.0.1:39081</code>, ADB is forwarding the connection over USB.
+      </p>
+      <p>This confirms transport only. It does not start or remotely approve a WebXR session.</p>
+    </main>
+  </body>
+</html>
