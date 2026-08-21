@@ -1,0 +1,10 @@
+# Purpose: Keep generated artifacts, dependencies, logs, and local machine files out of version control.
+
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.playwright-cli/
+*.log
+.DS_Store

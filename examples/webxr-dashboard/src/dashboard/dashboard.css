@@ -1,0 +1,234 @@
+/**
+ * Purpose: Present the Phase 0 operator console as a calm, legible laptop interface.
+ * Context: Status and proof evidence must remain readable during a live PICO test.
+ * Responsibilities: Define layout, hierarchy, responsive behavior, and accessible controls.
+ * Boundaries: This stylesheet contains no product dashboard component system.
+ */
+
+:root {
+  color: #f4f7fb;
+  background: #090d13;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: radial-gradient(circle at 75% 10%, rgb(69 101 153 / 24%), transparent 32rem), #090d13;
+}
+
+main {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 56px 0 80px;
+}
+
+.hero {
+  max-width: 760px;
+  margin-bottom: 36px;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 14px;
+  font-size: clamp(2.2rem, 5vw, 4.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+h2 {
+  margin-bottom: 14px;
+  font-size: 1rem;
+}
+
+.hero > p:last-child,
+.event-panel p {
+  color: #a9b7c9;
+  line-height: 1.6;
+}
+
+.eyebrow {
+  margin-bottom: 10px;
+  color: #82b4ff;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 1px solid #263244;
+  border-radius: 18px;
+  background: #263244;
+}
+
+.status-grid article {
+  display: grid;
+  gap: 8px;
+  min-height: 92px;
+  padding: 20px;
+  background: #101720;
+}
+
+.status-grid span {
+  color: #718199;
+  font-size: 0.78rem;
+}
+
+.device-status-card small {
+  color: #8b9bb0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+#device-status[data-state="online"] {
+  color: #83e6ad;
+}
+
+#device-status[data-state="searching"],
+#device-status[data-state="offline"] {
+  color: #f2c66d;
+}
+
+#device-status[data-state="unauthorized"],
+#device-status[data-state="multiple"],
+#device-status[data-state="error"] {
+  color: #ff9caf;
+}
+
+#device-status[data-fresh="false"] {
+  color: #a9b7c9;
+}
+
+.controls,
+.recovery-panel,
+.event-panel {
+  margin-top: 20px;
+  padding: 24px;
+  border: 1px solid #263244;
+  border-radius: 18px;
+  background: rgb(16 23 32 / 88%);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+}
+
+.controls p {
+  color: #8b9bb0;
+  line-height: 1.5;
+}
+
+.world-controls {
+  grid-column: 1 / -1;
+}
+
+.recovery-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  border-color: #5d3440;
+  background: rgb(38 19 27 / 88%);
+}
+
+.recovery-panel p:last-child {
+  max-width: 700px;
+  margin-bottom: 0;
+  color: #c9aeb6;
+  line-height: 1.55;
+}
+
+.danger-button {
+  flex: 0 0 auto;
+  border-color: #a54e62;
+  color: #ffe9ed;
+  background: #60293a;
+}
+
+.danger-button:hover:not(:disabled),
+.danger-button:focus-visible {
+  border-color: #ff9caf;
+  background: #7c3045;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #3b4b61;
+  border-radius: 10px;
+  color: #eef5ff;
+  background: #172231;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled),
+button:focus-visible,
+button[data-active="true"],
+button[data-pending="true"] {
+  border-color: #82b4ff;
+  background: #1d3453;
+  outline: none;
+}
+
+button[data-pending="true"] {
+  border-style: dashed;
+}
+
+button:disabled {
+  color: #657286;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.event-panel p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  main {
+    width: min(100% - 24px, 1120px);
+    padding-top: 32px;
+  }
+
+  .status-grid,
+  .controls,
+  .recovery-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .recovery-panel {
+    display: grid;
+  }
+
+  .world-controls {
+    grid-column: auto;
+  }
+}
