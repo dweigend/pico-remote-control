@@ -39,17 +39,14 @@ that answer one question at a time.
   contract.
 - [Android Debug Bridge](https://developer.android.com/tools/adb) handles USB authorization,
   device commands, reverse port mappings, and browser launch intents.
-- [scrcpy](https://github.com/Genymobile/scrcpy) provides the external headset mirror. I did not
-  invent another video protocol. You are welcome.
+- [scrcpy](https://github.com/Genymobile/scrcpy) provides the external headset mirror.
 - [TypeScript](https://www.typescriptlang.org/docs/) keeps commands, observations, and runtime state
   explicit at the application boundaries.
-- [Biome](https://biomejs.dev/) keeps formatting and static checks boring—in the good sense.
+- [Biome](https://biomejs.dev/) keeps formatting and static checks boring.
 - The included models are CC0 assets from [Poly Pizza](https://poly.pizza/), with attribution and
   source metadata stored beside the files.
 
-There is no frontend framework and no WebSocket helper library. The browser APIs and Bun already do
-the required jobs, so I let them.
-
+There is no frontend framework and no WebSocket helper library. The browser APIs and Bun already do the job.
 ## How it fits together
 
 ```text
