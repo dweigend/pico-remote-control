@@ -1,0 +1,216 @@
+#!/usr/bin/env bash
+# Purpose: Provide one small macOS command for controlling a connected PICO headset.
+# Context: Wraps the official Android Debug Bridge and scrcpy without a PICO account.
+# Responsibilities: USB device selection, common ADB actions, and scrcpy mirroring.
+# Boundaries: Does not manage PICO cloud enrollment, firmware, or network access.
+
+set -euo pipefail
+
+readonly APP_NAME="$(basename "$0")"
+readonly DEFAULT_MAX_SIZE="1920"
+readonly DEFAULT_MAX_FPS="60"
+
+die() {
+  printf 'Error: %s\n' "$1" >&2
+  exit 1
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || die "Missing command: $1"
+}
+
+available_usb_device_serials() {
+  adb devices -l | awk '
+    NR > 1 && $2 == "device" {
+      for (field = 3; field <= NF; field += 1) {
+        if ($field ~ /^usb:/) {
+          print $1
+          next
+        }
+      }
+    }
+  '
+}
+
+selected_device_serial() {
+  local serials
+  local count
+
+  if [[ -n "${PICO_SERIAL:-}" ]]; then
+    [[ "$PICO_SERIAL" != *:* ]] || die "Network ADB is disabled. Connect the headset over USB-C."
+    [[ "$PICO_SERIAL" != emulator-* ]] || die "Android emulators are disabled. Connect the headset over USB-C."
+    available_usb_device_serials | awk -v serial="$PICO_SERIAL" '$0 == serial { found = 1 } END { exit !found }' ||
+      die "PICO_SERIAL is not an authorized USB device."
+    printf '%s\n' "$PICO_SERIAL"
+    return
+  fi
+
+  serials="$(available_usb_device_serials)"
+  count="$(printf '%s\n' "$serials" | sed '/^$/d' | wc -l | tr -d ' ')"
+  [[ "$count" -gt 0 ]] || die "No authorized PICO found. Connect a USB-C data cable and enable USB debugging."
+  [[ "$count" -eq 1 ]] || die "Multiple USB devices found. Set PICO_SERIAL to select one."
+  printf '%s\n' "$serials"
+}
+
+run_adb() {
+  local serial
+  serial="$(selected_device_serial)"
+  adb -s "$serial" "$@"
+}
+
+wake_if_asleep() {
+  local serial="$1"
+  local wakefulness
+  wakefulness="$(adb -s "$serial" shell dumpsys power | awk -F= '/mWakefulness=/ { print $2; exit }' | tr -d '\r')"
+  [[ "$wakefulness" == "Asleep" ]] || return
+  adb -s "$serial" shell input keyevent 26
+  sleep 1
+}
+
+show_status() {
+  local serial
+  serial="$(selected_device_serial)"
+  printf 'Device:    %s\n' "$serial"
+  printf 'Model:     %s\n' "$(adb -s "$serial" shell getprop ro.product.model | tr -d '\r')"
+  printf 'Android:   %s\n' "$(adb -s "$serial" shell getprop ro.build.version.release | tr -d '\r')"
+  printf 'PICO OS:   %s\n' "$(adb -s "$serial" shell getprop ro.build.display.id | tr -d '\r')"
+  printf 'Transport: USB-C\n'
+}
+
+run_scrcpy() {
+  local serial
+  serial="$(selected_device_serial)"
+  require_command scrcpy
+  wake_if_asleep "$serial"
+  scrcpy --serial "$serial" --no-audio --max-size "$DEFAULT_MAX_SIZE" --max-fps "$DEFAULT_MAX_FPS" "$@"
+}
+
+mirror_left_eye() {
+  local size
+  local width
+  local height
+  local eye_width
+
+  size="$(run_adb shell wm size | awk -F': ' '/Physical size/ { print $2 }' | tr -d '\r')"
+  [[ "$size" == *x* ]] || die "Could not determine the headset display size."
+  width="${size%x*}"
+  height="${size#*x}"
+  eye_width="$((width / 2))"
+  run_scrcpy --crop "${eye_width}:${height}:0:0"
+}
+
+install_apk() {
+  local apk_path="${1:-}"
+  [[ -n "$apk_path" ]] || die "Usage: $APP_NAME install <file.apk>"
+  [[ -f "$apk_path" ]] || die "APK not found: $apk_path"
+  run_adb install -r "$apk_path"
+}
+
+capture_path() {
+  local extension="$1"
+  mkdir -p captures
+  printf 'captures/picoctl-%s.%s\n' "$(date '+%Y%m%d-%H%M%S')" "$extension"
+}
+
+take_screenshot() {
+  local output_path="${1:-$(capture_path png)}"
+  run_adb exec-out screencap -p >"$output_path"
+  printf 'Saved screenshot: %s\n' "$output_path"
+}
+
+record_screen() {
+  local output_path="${1:-$(capture_path mp4)}"
+  printf 'Recording to %s. Press Ctrl+C to stop.\n' "$output_path"
+  run_scrcpy --record "$output_path"
+}
+
+open_android_settings() {
+  run_adb shell am start -a android.settings.SETTINGS >/dev/null
+  printf 'Opened Android settings on the headset.\n'
+}
+
+print_help() {
+  cat <<EOF
+Usage: ${APP_NAME} [command] [argument]
+
+Commands:
+  menu                 Open the interactive menu (default)
+  status               Show the connected headset
+  mirror               Mirror and control the full headset display
+  eye                  Mirror and control the left-eye view
+  shell                Open an interactive Android shell
+  settings             Open Android settings on the headset
+  install <file.apk>   Install or update an APK
+  screenshot [file]    Save a PNG screenshot
+  record [file]        Mirror and record an MP4 until Ctrl+C
+  reboot               Reboot the headset
+  help                  Show this help
+
+All device communication uses USB-C. Set PICO_SERIAL when more than one USB
+device is connected.
+EOF
+}
+
+read_required_path() {
+  local prompt="$1"
+  local path
+  read -r -p "$prompt" path
+  [[ -n "$path" ]] || die "No path entered."
+  printf '%s\n' "$path"
+}
+
+run_menu_choice() {
+  case "$1" in
+    1) show_status ;;
+    2) run_scrcpy ;;
+    3) mirror_left_eye ;;
+    4) run_adb shell ;;
+    5) open_android_settings ;;
+    6) install_apk "$(read_required_path 'APK path: ')" ;;
+    7) take_screenshot ;;
+    8) record_screen ;;
+    9) run_adb reboot ;;
+    0) return 1 ;;
+    *) printf 'Unknown selection.\n' >&2 ;;
+  esac
+}
+
+interactive_menu() {
+  local choice
+  while true; do
+    printf '\nPICO Control\n'
+    printf '  1  Status                 6  Install APK\n'
+    printf '  2  Mirror and control     7  Screenshot\n'
+    printf '  3  Mirror left eye        8  Record screen\n'
+    printf '  4  Android shell          9  Reboot\n'
+    printf '  5  Open settings\n'
+    printf '  0  Exit\n\n'
+    read -r -p 'Selection: ' choice
+    run_menu_choice "$choice" || break
+  done
+}
+
+main() {
+  local command="${1:-menu}"
+  if [[ "$command" == "help" || "$command" == "--help" || "$command" == "-h" ]]; then
+    print_help
+    return
+  fi
+
+  require_command adb
+  case "$command" in
+    menu) interactive_menu ;;
+    status) show_status ;;
+    mirror) run_scrcpy ;;
+    eye) mirror_left_eye ;;
+    shell) run_adb shell ;;
+    settings) open_android_settings ;;
+    install) install_apk "${2:-}" ;;
+    screenshot) take_screenshot "${2:-}" ;;
+    record) record_screen "${2:-}" ;;
+    reboot) run_adb reboot ;;
+    *) print_help; die "Unknown command: $1" ;;
+  esac
+}
+
+main "$@"
